@@ -1,11 +1,14 @@
 Platformio code for using a ESP8266 to read the serial data from a IVT-490 series heat pump. 
 
+The project is based on https://github.com/mskorge/ivt490-esp8266 and https://github.com/jorgeassuncao/MAID-EM 
+
 Each value will be sent to a MQTT server where the main topic is #board#MAC" and a subtopic for each value
 
 There is a webserver that you can use to update the firmware too.
 
 
 Using Home Assistant I have the following configuration:
+<code>
 - platform: mqtt
   device_class: temperature 
   name: "IVT_495_framledning_temp"
@@ -168,4 +171,4 @@ Using Home Assistant I have the following configuration:
 - platform: mqtt
   name: "IVT_495_Default_SV2_Open"
   state_topic: 'ESP8266_5ED7/IVT_490/Default_SV2_Open'
-  
+  </code>

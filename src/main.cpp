@@ -228,7 +228,7 @@ void setup()
   tmpmac.remove(0, tmpmac.length()-4);
   unictopic += "_";
   unictopic += tmpmac;
-  mqtt_sub_set_description = unictopic + mqtt_sub_set_description;
+  
   for(int i=0; i< mqtt_total_topics; i++){
     mqtt_topics[i] = unictopic; 
   }
@@ -296,30 +296,54 @@ void setup()
   delay(10);
   server.begin();
   Serial.begin(115200);
-  swSer.begin(9600);
+  swSer.begin(9600, SWSERIAL_8N1,rxpin, txpin, false,512,512);
   delay(10);
 
 }
 
 void fetchSerial ()
 {
+
+  inputString = "";
   while(swSer.available() > 0)
   {
     inChar = swSer.read();
-    if(inChar != 32){
-      inputString += inChar;
-    }
-    delay(2);
-  }
-  inChar = '0';
-  Serial.println(inputString);
-  Debug.println(inputString);
+     if(inChar == ';')
+    {}
+    else if(inChar == ' ')
+    {}
+   else if(inChar == '-')
+    {}    
+    else if(inChar >= '0')
+    {
+      if(inChar <= '9')
+      {
 
+      }
+      else
+      {// illegal char
+ 
+        Debug.printf("illigal char in string: %d\r\n", (int)inChar);
+        continue;
+      }
+      
+    }
+    else
+    { // illegal char
+       Debug.printf("illigal char in string: %d\r\n", (int)inChar);
+       continue;
+     }
+    inputString += inChar;
+    delay(5);
+  }
+ 
+  Debug.println(inputString);
   stringComplete = true;
 }
 
 void splitString ()
 { 
+
   commaPosition = inputString.indexOf(';');
   while(commaPosition >= 0)
   {
@@ -335,16 +359,21 @@ void splitString ()
         ivt[counter] = stringToFloat(inputString.substring(0,commaPosition));
       }
     }
+    // handle large numbers so that the comma is in the correct place
+    while(ivt[counter] > (float)1200){
+      ivt[counter] = ivt[counter] /(float)10;
+
+    }
+
     counter++;
   }
-  Debug.println(inputString);
-  counter = 0;
-  inputString = "";
-  commaPosition = 0;
+  //Debug.println(inputString);
+
   String tosend;
-  for(int i = 1; i < mqtt_total_topics; i++){
+  //only send the values recieved
+  for(int i = 1; i < counter; i++){
     
-     tosend = ivt[i];
+    tosend = ivt[i];
     client.publish(mqtt_topics[i-1].c_str(),tosend.c_str(), true);                    // Publish to MQTT topic
     Serial.println(mqtt_topics[i-1]);
     Serial.println(tosend);
@@ -352,6 +381,10 @@ void splitString ()
     Debug.println(mqtt_topics[i-1]);
     Debug.println(tosend);
   }
+  inputString = "";
+  commaPosition = 0;  
+  counter = 0;
+
   memset(ivt, 0, sizeof ivt);
   stringComplete = false;
  
@@ -384,12 +417,12 @@ void loop() {
   client.loop();
   if(swSer.available() > 0)
   {
+    delay(100);
     fetchSerial();
   }
-  if(stringComplete == true){
-    delay(10);
-    splitString();
-    delay(50);
+  if(stringComplete == true)
+  {
+     splitString();
   }
   Debug.handle();                                                               // Remote debug over telnet
   yield();       
